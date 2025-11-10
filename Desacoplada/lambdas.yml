@@ -1,0 +1,291 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Lambda Functions for Book Manager Microservices with VPC"
+
+Parameters:
+  ECRRepository:
+    Type: String
+    Description: ECR Repository Name
+    Default: book-manager
+
+  CreateBookImageTag:
+    Type: String
+    Description: Image tag for Create Book Lambda
+    Default: create
+
+  GetBooksImageTag:
+    Type: String
+    Description: Image tag for Get Books Lambda
+    Default: get-all
+
+  GetBookImageTag:
+    Type: String
+    Description: Image tag for Get Book Lambda
+    Default: get
+
+  UpdateBookImageTag:
+    Type: String
+    Description: Image tag for Update Book Lambda
+    Default: update
+
+  DeleteBookImageTag:
+    Type: String
+    Description: Image tag for Delete Book Lambda
+    Default: delete
+
+  DBHost:
+    Type: String
+    Description: RDS PostgreSQL Endpoint
+
+  DBName:
+    Type: String
+    Default: bookmanagerdb
+    Description: Database name
+
+  DBUser:
+    Type: String
+    Default: postgres
+    Description: Database user
+
+  DBPass:
+    Type: String
+    NoEcho: true
+    Description: Database password
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the Lambdas will run
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets for Lambda functions
+
+  DBSecurityGroupId:
+    Type: String
+    Description: Security Group ID de la base de datos RDS
+
+Resources:
+  ###########################################
+  # Security Group para Lambdas
+  ###########################################
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group para Lambdas en VPC
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  ###########################################
+  # Regla de Security Group: Permitir acceso de Lambdas a RDS
+  ###########################################
+  LambdaToDBAccess:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow Lambda to access RDS
+      GroupId: !Ref DBSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  ###########################################
+  # Lambda Functions
+  ###########################################
+  CreateBookLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: book-manager-create
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:${CreateBookImageTag}"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DB_TYPE: postgres
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBUser
+          DB_PASS: !Ref DBPass
+          DB_HOST: !Ref DBHost
+          DB_PORT: "5432"
+          LAMBDA_FUNCTION: create
+      Architectures:
+        - x86_64
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+
+  GetBooksLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: book-manager-get-all
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:${GetBooksImageTag}"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DB_TYPE: postgres
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBUser
+          DB_PASS: !Ref DBPass
+          DB_HOST: !Ref DBHost
+          DB_PORT: "5432"
+          LAMBDA_FUNCTION: get_all
+      Architectures:
+        - x86_64
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+
+  GetBookLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: book-manager-get
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:${GetBookImageTag}"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DB_TYPE: postgres
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBUser
+          DB_PASS: !Ref DBPass
+          DB_HOST: !Ref DBHost
+          DB_PORT: "5432"
+          LAMBDA_FUNCTION: get
+      Architectures:
+        - x86_64
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+
+  UpdateBookLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: book-manager-update
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:${UpdateBookImageTag}"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DB_TYPE: postgres
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBUser
+          DB_PASS: !Ref DBPass
+          DB_HOST: !Ref DBHost
+          DB_PORT: "5432"
+          LAMBDA_FUNCTION: update
+      Architectures:
+        - x86_64
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+
+  DeleteBookLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: book-manager-delete
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:${DeleteBookImageTag}"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DB_TYPE: postgres
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBUser
+          DB_PASS: !Ref DBPass
+          DB_HOST: !Ref DBHost
+          DB_PORT: "5432"
+          LAMBDA_FUNCTION: delete
+      Architectures:
+        - x86_64
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+
+  ###########################################
+  # Log Groups
+  ###########################################
+  CreateBookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CreateBookLambda}"
+      RetentionInDays: 7
+
+  GetBooksLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GetBooksLambda}"
+      RetentionInDays: 7
+
+  GetBookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GetBookLambda}"
+      RetentionInDays: 7
+
+  UpdateBookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UpdateBookLambda}"
+      RetentionInDays: 7
+
+  DeleteBookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DeleteBookLambda}"
+      RetentionInDays: 7
+
+Outputs:
+  CreateBookLambdaArn:
+    Description: ARN de la función Lambda para crear libros
+    Value: !GetAtt CreateBookLambda.Arn
+
+  GetBooksLambdaArn:
+    Description: ARN de la función Lambda para obtener todos los libros
+    Value: !GetAtt GetBooksLambda.Arn
+
+  GetBookLambdaArn:
+    Description: ARN de la función Lambda para obtener un libro
+    Value: !GetAtt GetBookLambda.Arn
+
+  UpdateBookLambdaArn:
+    Description: ARN de la función Lambda para actualizar libros
+    Value: !GetAtt UpdateBookLambda.Arn
+
+  DeleteBookLambdaArn:
+    Description: ARN de la función Lambda para eliminar libros
+    Value: !GetAtt DeleteBookLambda.Arn
+
+  LambdaSecurityGroupId:
+    Description: Security Group ID de las Lambdas
+    Value: !Ref LambdaSecurityGroup
