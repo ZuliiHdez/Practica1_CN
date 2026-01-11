@@ -28,10 +28,9 @@ class BookUpdate(BookBase):
     author: Optional[str] = None
 
 class Book(BookBase):
-    book_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    book_id: str = Field(default_factory=lambda: str(uuid.uuid4()), example="550e8400-e29b-41d4-a716-446655440000")
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
     class Config:
-        from_attributes = True  
-
+        orm_mode = True

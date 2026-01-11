@@ -7,6 +7,11 @@ Parameters:
     Description: Nombre de la imagen en ECR
     Default: book-manager:latest
 
+  VpcCidr:
+    Type: String
+    Description: CIDR range de la VPC
+    Default: "172.31.0.0/16"
+
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: VPC donde se desplegará ECS
@@ -15,6 +20,11 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Al menos 2 subredes para ECS
 
+  EnrutamientoId:
+    Type: String
+    Description: Route Table ID para VPC Endpoints
+    Default: "rtb-0292d1aa57651db0d" 
+    
   DBHost:
     Type: String
     Description: Endpoint de la base de datos RDS
@@ -35,6 +45,58 @@ Parameters:
     Description: Contraseña de la base de datos
 
 Resources:
+  BooksEndPointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para VPC Endpoints
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VpcCidr
+
+  BooksApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.api"
+      VpcId: !Ref VpcId
+      PrivateDnsEnabled: true
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !Ref BooksEndPointSecurityGroup
+
+  BooksDockerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.dkr"
+      VpcId: !Ref VpcId
+      PrivateDnsEnabled: true
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !Ref BooksEndPointSecurityGroup
+
+  BooksLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      VpcId: !Ref VpcId
+      PrivateDnsEnabled: true
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !Ref BooksEndPointSecurityGroup
+
+  DownloadImageEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Gateway
+      VpcId: !Ref VpcId
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      RouteTableIds:
+        - !Ref EnrutamientoId
 
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -45,7 +107,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidr
 
   NLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -126,15 +188,19 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - Listener
+      - BooksApiEndpoint
+      - BooksDockerEndpoint
+      - BooksLogsEndpoint
     Properties:
       Cluster: !Ref ECSCluster
       ServiceName: bookmanager-service
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           Subnets: !Ref SubnetIds
           SecurityGroups:
             - !Ref ECSSecurityGroup
@@ -361,7 +427,3 @@ Outputs:
   APIKeyId:
     Description: API Key ID
     Value: !Ref APIKey
-
-  ECSSecurityGroupId:
-    Description: ID del Security Group ECS
-    Value: !Ref ECSSecurityGroup

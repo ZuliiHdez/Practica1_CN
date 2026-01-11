@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📚 Book Manager</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { 
+      margin:0; 
+      padding:0; 
+      box-sizing:border-box; 
+    }
+    
+    :root {
+      --primary: #2c5530;
+      --primary-light: #4a7856;
+      --secondary: #6b7280;
+      --accent: #d1d5db;
+      --background: #f9fafb;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --error: #dc2626;
+      --success: #059669;
+      --warning: #d97706;
+      --info: #0369a1;
+      --border: #e5e7eb;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    
+    .config-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+    }
+    
+    .config-modal { 
+      background: var(--surface); 
+      padding: 2rem; 
+      border-radius: 8px; 
+      max-width: 450px; 
+      width: 90%; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .config-modal h2 { 
+      margin-bottom: 1.5rem; 
+      color: var(--text);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .config-modal input { 
+      width: 100%; 
+      padding: 12px; 
+      margin-bottom: 1rem; 
+      border: 1px solid var(--border); 
+      border-radius: 6px; 
+      font-size: 14px; 
+      transition: border-color 0.2s;
+    }
+    
+    .config-modal input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .config-modal button { 
+      width: 100%; 
+      padding: 12px; 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      font-size: 16px; 
+      font-weight: 500;
+      cursor: pointer; 
+      transition: background-color 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .config-modal button:hover { 
+      background: var(--primary-light); 
+    }
+    
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 1.5rem; 
+      background: var(--surface); 
+      padding: 1.5rem; 
+      border-radius: 8px; 
+      box-shadow: var(--shadow);
+    }
+    
+    .header h1 { 
+      color: var(--text); 
+      font-size: 1.75rem; 
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn { 
+      padding: 10px 16px; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 14px; 
+      font-weight: 500; 
+      transition: all 0.2s; 
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary { 
+      background: var(--primary); 
+      color: white; 
+    }
+    
+    .btn-primary:hover { 
+      background: var(--primary-light); 
+    }
+    
+    .btn-secondary { 
+      background: var(--accent); 
+      color: var(--text); 
+    }
+    
+    .btn-secondary:hover { 
+      background: #cbd5e1; 
+    }
+    
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    
+    .table-container { 
+      background: var(--surface); 
+      border-radius: 8px; 
+      padding: 1.5rem; 
+      box-shadow: var(--shadow);
+      overflow: auto;
+    }
+    
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      min-width: 800px;
+    }
+    
+    th, td { 
+      padding: 12px 16px; 
+      border-bottom: 1px solid var(--border); 
+      text-align: left; 
+    }
+    
+    th { 
+      background: var(--surface); 
+      color: var(--text); 
+      font-weight: 600;
+    }
+    
+    tr:hover { 
+      background: #f8fafc; 
+    }
+    
+    .modal { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 999; 
+    }
+    
+    .modal.active { 
+      display: flex; 
+    }
+    
+    .modal-content { 
+      background: var(--surface); 
+      padding: 2rem; 
+      border-radius: 8px; 
+      max-width: 600px; 
+      width: 90%; 
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .modal-content h2 { 
+      margin-bottom: 1.5rem; 
+      color: var(--text); 
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group { 
+      margin-bottom: 1.5rem; 
+      flex: 1;
+    }
+    
+    .form-group label { 
+      display: block; 
+      margin-bottom: 8px; 
+      font-weight: 500; 
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea { 
+      width: 100%; 
+      padding: 10px; 
+      border: 1px solid var(--border); 
+      border-radius: 6px; 
+      font-size: 14px; 
+      transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .form-actions { 
+      display: flex; 
+      justify-content: flex-end; 
+      gap: 12px; 
+      margin-top: 1.5rem;
+    }
+    
+    .error { 
+      background: #fef2f2; 
+      color: var(--error); 
+      padding: 1rem; 
+      border-radius: 6px; 
+      margin-bottom: 1.5rem; 
+      border-left: 4px solid var(--error);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .success {
+      background: #f0fdf4;
+      color: var(--success);
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--success);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0.5rem 0;
+      color: var(--primary);
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-light);
+    }
+    
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    
+    .book-cover {
+      width: 36px;
+      height: 48px;
+      background: var(--primary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      margin-right: 12px;
+    }
+    
+    .book-title {
+      display: flex;
+      align-items: center;
+    }
+    
+    .search-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .search-button {
+      padding: 10px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .search-button:hover {
+      background: var(--primary-light);
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .action-buttons button {
+      padding: 6px 10px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-available {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-borrowed {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-reserved {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    
+    .status-lost {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .rating-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .rating-low {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .rating-medium {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .rating-high {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .rating-excellent {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+    
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    
+    .tag {
+      background: var(--accent);
+      color: var(--text);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    
+    @media (max-width: 1024px) {
+      .table-container {
+        overflow-x: auto;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+      
+      .header h1 {
+        justify-content: center;
+      }
+      
+      .btn-group {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      .stats-container {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .search-container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="configOverlay" class="config-overlay">
+    <div class="config-modal">
+      <h2><i class="fas fa-cogs"></i> Configurar API</h2>
+      <input type="text" id="apiUrl" placeholder="URL del backend (ej: https://api.example.com)">
+      <input type="password" id="apiKey" placeholder="API Key">
+      <button onclick="saveConfig()"><i class="fas fa-plug"></i> Conectar</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div class="header">
+      <h1><i class="fas fa-book"></i> Book Manager</h1>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Nuevo Libro</button>
+        <button class="btn btn-secondary" onclick="refreshBooks()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        <button class="btn btn-secondary" onclick="logout()"><i class="fas fa-cog"></i> Configurar</button>
+      </div>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="successContainer"></div>
+
+    <div class="stats-container" id="statsContainer">
+      <div class="stat-card">
+        <i class="fas fa-book stat-icon"></i>
+        <div class="stat-value" id="totalBooks">0</div>
+        <div class="stat-label">Total de Libros</div>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-user stat-icon"></i>
+        <div class="stat-value" id="totalAuthors">0</div>
+        <div class="stat-label">Autores Únicos</div>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-tags stat-icon"></i>
+        <div class="stat-value" id="totalGenres">0</div>
+        <div class="stat-label">Géneros</div>
+      </div>
+      <div class="stat-card">
+        <i class="fas fa-calendar-alt stat-icon"></i>
+        <div class="stat-value" id="oldestBook">-</div>
+        <div class="stat-label">Libro Más Antiguo</div>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, autor, género o tags...">
+      <button class="search-button" onclick="searchBooks()"><i class="fas fa-search"></i> Buscar</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>Género</th>
+            <th>Año</th>
+            <th>Estado</th>
+            <th>Rating</th>
+            <th>Tags</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="bookTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="bookModal" class="modal">
+    <div class="modal-content">
+      <h2 id="modalTitle"><i class="fas fa-book"></i> Nuevo Libro</h2>
+      <form id="bookForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-heading"></i> Título</label>
+            <input type="text" id="title" required>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Autor</label>
+            <input type="text" id="author" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-tags"></i> Género</label>
+            <input type="text" id="genre">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-calendar-alt"></i> Año</label>
+            <input type="number" id="year" min="0">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-bookmark"></i> Estado</label>
+            <select id="status">
+              <option value="available">Disponible</option>
+              <option value="borrowed">Prestado</option>
+              <option value="reserved">Reservado</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-star"></i> Rating</label>
+            <select id="rating">
+              <option value="low">Bajo</option>
+              <option value="medium" selected>Medio</option>
+              <option value="high">Alto</option>
+              <option value="excellent">Excelente</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label><i class="fas fa-tags"></i> Tags (separados por comas)</label>
+          <input type="text" id="tags" placeholder="fantasía, aventura, drama...">
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i> Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let API_URL = '';
+    let API_KEY = '';
+    let currentBookId = null;
+    let allBooks = [];
+
+    window.onload = () => {
+      const savedUrl = localStorage.getItem('apiUrl');
+      const savedKey = localStorage.getItem('apiKey');
+      if (savedUrl && savedKey) {
+        document.getElementById('apiUrl').value = savedUrl;
+        document.getElementById('apiKey').value = savedKey;
+        saveConfig();
+      }
+    };
+
+    function saveConfig() {
+      API_URL = document.getElementById('apiUrl').value.trim().replace(/\/+$/, '');
+      API_KEY = document.getElementById('apiKey').value.trim();
+      if (!API_URL || !API_KEY) { 
+        showError('Completa ambos campos'); 
+        return; 
+      }
+      localStorage.setItem('apiUrl', API_URL);
+      localStorage.setItem('apiKey', API_KEY);
+      document.getElementById('configOverlay').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadBooks();
+    }
+
+    function logout() {
+      document.getElementById('configOverlay').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+
+    async function apiRequest(endpoint, method = 'GET', body = null) {
+      const options = { 
+        method, 
+        headers: { 
+          'Content-Type':'application/json',
+          'x-api-key':API_KEY 
+        } 
+      };
+      if (body) options.body = JSON.stringify(body);
+      try {
+        const res = await fetch(`${API_URL}${endpoint}`, options);
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status} - ${errorText}`);
+        }
+        return method === 'DELETE' ? null : await res.json();
+      } catch(err) {
+        if(err instanceof TypeError) {
+          throw new Error(`Error de conexión o CORS: ${err.message}`);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    async function loadBooks() {
+      try { 
+        const books = await apiRequest('/books'); 
+        allBooks = books;
+        renderBooks(books); 
+        updateStats(books);
+      }
+      catch(err){ 
+        showError(`Error al cargar libros: ${err.message}`); 
+      }
+    }
+
+    function renderBooks(books) {
+      const tbody = document.getElementById('bookTableBody');
+      tbody.innerHTML = '';
+      
+      if (books.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <h3>No se encontraron libros</h3>
+                <p>Agrega tu primer libro haciendo clic en "Nuevo Libro"</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      books.forEach(book => {
+        const tr = document.createElement('tr');
+        const firstLetter = book.title.charAt(0).toUpperCase();
+        
+
+        const statusText = {
+          'available': 'Disponible',
+          'borrowed': 'Prestado',
+          'reserved': 'Reservado',
+          'lost': 'Perdido'
+        };
+        
+   
+        const ratingText = {
+          'low': 'Bajo',
+          'medium': 'Medio',
+          'high': 'Alto',
+          'excellent': 'Excelente'
+        };
+        
+        tr.innerHTML = `
+          <td>
+            <div class="book-title">
+              <div class="book-cover">${firstLetter}</div>
+              ${book.title}
+            </div>
+          </td>
+          <td>${book.author||''}</td>
+          <td>${book.genre||''}</td>
+          <td>${book.year||''}</td>
+          <td><span class="status-badge status-${book.status||'available'}">${statusText[book.status] || 'Disponible'}</span></td>
+          <td><span class="rating-badge rating-${book.rating||'medium'}">${ratingText[book.rating] || 'Medio'}</span></td>
+          <td>
+            <div class="tags-container">
+              ${book.tags && book.tags.length > 0 
+                ? book.tags.map(tag => `<span class="tag">${tag}</span>`).join('') 
+                : '<span class="text-light">-</span>'}
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="editBook('${book.book_id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-danger" onclick="deleteBook('${book.book_id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStats(books) {
+      document.getElementById('totalBooks').textContent = books.length;
+      
+      const authors = [...new Set(books.map(book => book.author).filter(Boolean))];
+      document.getElementById('totalAuthors').textContent = authors.length;
+      
+      const genres = [...new Set(books.map(book => book.genre).filter(Boolean))];
+      document.getElementById('totalGenres').textContent = genres.length;
+      
+      const booksWithYear = books.filter(book => book.year);
+      if (booksWithYear.length > 0) {
+        const oldestBook = booksWithYear.reduce((oldest, current) => 
+          current.year < oldest.year ? current : oldest
+        );
+        document.getElementById('oldestBook').textContent = oldestBook.year;
+      } else {
+        document.getElementById('oldestBook').textContent = '-';
+      }
+    }
+
+    function openModal() { 
+      currentBookId = null; 
+      document.getElementById('bookForm').reset(); 
+      document.getElementById('modalTitle').innerHTML = '<i class="fas fa-book"></i> Nuevo Libro'; 
+      document.getElementById('bookModal').classList.add('active'); 
+    }
+    
+    function closeModal() { 
+      document.getElementById('bookModal').classList.remove('active'); 
+    }
+
+    document.getElementById('bookForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const data = {
+        title: document.getElementById('title').value,
+        author: document.getElementById('author').value,
+        genre: document.getElementById('genre').value,
+        year: parseInt(document.getElementById('year').value) || null,
+        status: document.getElementById('status').value,
+        rating: document.getElementById('rating').value,
+        tags: document.getElementById('tags').value ? document.getElementById('tags').value.split(',').map(tag => tag.trim()) : []
+      };
+      try {
+        if(currentBookId) {
+          await apiRequest(`/books/${currentBookId}`,'PUT',data);
+          showSuccess('Libro actualizado correctamente');
+        } else {
+          await apiRequest('/books','POST',data);
+          showSuccess('Libro agregado correctamente');
+        }
+        closeModal(); 
+        loadBooks();
+      } catch(err){ 
+        showError(`Error al guardar libro: ${err.message}`); 
+      }
+    };
+
+    async function editBook(id){
+      try{
+        const book = await apiRequest(`/books/${id}`);
+        currentBookId = id;
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Libro';
+        document.getElementById('title').value = book.title;
+        document.getElementById('author').value = book.author;
+        document.getElementById('genre').value = book.genre || '';
+        document.getElementById('year').value = book.year || '';
+        document.getElementById('status').value = book.status || 'available';
+        document.getElementById('rating').value = book.rating || 'medium';
+        document.getElementById('tags').value = book.tags ? book.tags.join(', ') : '';
+        document.getElementById('bookModal').classList.add('active');
+      } catch(err){ 
+        showError(`Error al cargar libro: ${err.message}`); 
+      }
+    }
+
+    async function deleteBook(id){ 
+      if(!confirm('¿Estás seguro de que quieres eliminar este libro?')) return;
+      try{ 
+        await apiRequest(`/books/${id}`,'DELETE'); 
+        showSuccess('Libro eliminado correctamente');
+        loadBooks(); 
+      } catch(err){ 
+        showError(`Error al eliminar libro: ${err.message}`); 
+      }
+    }
+
+    function searchBooks() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      if (!searchTerm) {
+        renderBooks(allBooks);
+        return;
+      }
+      
+      const filteredBooks = allBooks.filter(book => 
+        book.title.toLowerCase().includes(searchTerm) ||
+        (book.author && book.author.toLowerCase().includes(searchTerm)) ||
+        (book.genre && book.genre.toLowerCase().includes(searchTerm)) ||
+        (book.tags && book.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+      );
+      
+      renderBooks(filteredBooks);
+    }
+
+    function refreshBooks(){ 
+      loadBooks(); 
+      showSuccess('Lista de libros actualizada');
+    }
+    
+    function showError(msg){ 
+      document.getElementById('errorContainer').innerHTML = `
+        <div class="error">
+          <i class="fas fa-exclamation-circle"></i> ${msg}
+        </div>
+      `;
+      setTimeout(() => {
+        document.getElementById('errorContainer').innerHTML = '';
+      }, 5000);
+    }
+    
+    function showSuccess(msg){ 
+      document.getElementById('successContainer').innerHTML = `
+        <div class="success">
+          <i class="fas fa-check-circle"></i> ${msg}
+        </div>
+      `;
+      setTimeout(() => {
+        document.getElementById('successContainer').innerHTML = '';
+      }, 3000);
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        searchBooks();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,13 +1,12 @@
 import os
 from typing import Dict, Type
-from app.db.db import Database       
-from app.db.postgres_db import PostgresDatabase
+from .db import Database
+from .postgres_db import PostgresDatabase
 
 class DatabaseFactory:
     
     _databases: Dict[str, Type[Database]] = {
         'postgres': PostgresDatabase,
-        
     }
     
     @classmethod

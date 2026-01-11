@@ -6,6 +6,11 @@ Parameters:
     Type: AWS::EC2::VPC::Id
     Description: VPC donde se desplegará la base de datos
 
+  VpcCidr:
+    Type: String
+    Description: CIDR range de la VPC
+    Default: "172.31.0.0/16"
+
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Al menos 2 subredes para RDS
@@ -30,13 +35,13 @@ Resources:
   DBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group temporal para RDS PostgreSQL
+      GroupDescription: Security group para RDS PostgreSQL
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 5432
           ToPort: 5432
-          CidrIp: 0.0.0.0/0  
+          CidrIp: !Ref VpcCidr
 
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -60,19 +65,16 @@ Resources:
       VPCSecurityGroups:
         - !Ref DBSecurityGroup
       DBSubnetGroupName: !Ref DBSubnetGroup
-      PubliclyAccessible: true
+      PubliclyAccessible: false
       BackupRetentionPeriod: 0
       DeletionProtection: false
+      MultiAZ: false
 
 Outputs:
   DBEndpoint:
     Description: Endpoint de PostgreSQL
     Value: !GetAtt PostgresDBInstance.Endpoint.Address
-
-  DBPort:
-    Description: Puerto de PostgreSQL
-    Value: !GetAtt PostgresDBInstance.Endpoint.Port
-
+    
   DBName:
     Description: Nombre de la base de datos
     Value: !Ref DBName
@@ -80,7 +82,7 @@ Outputs:
   DBUser:
     Description: Usuario maestro
     Value: !Ref DBUser
-
+    
   DBSecurityGroupId:
     Description: Security Group de la base de datos
     Value: !Ref DBSecurityGroup
